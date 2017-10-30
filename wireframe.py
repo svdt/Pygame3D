@@ -157,16 +157,16 @@ class Wireframe:
 
         # Is it better to use a for loop or generate a long list then add it?
         # Should raise exception if edge value > len(self.nodes)
-        self.edges += [edge for edge in edge_list if not any(e.internal_id == edge.internal_id for e in self.edges)]
+
+        self.edges += [Edge(self,edge[0],edge[1]) for edge in edge_list if not any(e.internal_id == uniquePair(edge[0],edge[1]) for e in self.edges)]
 
     def addFaces(self, face_list, face_colour=(255,255,255)):
         for node_list in face_list:
             #self.faces.append([self.nodes[node] for node in node_list])
             self.faces.append(Face(self,node_list, np.array(face_colour, np.uint8)))
             #self.addEdges([Edge(self,node_list[n-1], node_list[n]) for n in range(len(node_list))])
-            for n in range(len(node_list)):
-                #if not any( == e.internal_id for e in self.edges):
-                self.edges.append(Edge(self,node_list[n-1], node_list[n]))
+            #if not any( == e.internal_id for e in self.edges):
+            self.addEdges([(node_list[n-1], node_list[n]) for n in range(len(node_list))])
 
 
     def output(self):
@@ -179,7 +179,7 @@ class Wireframe:
 
     def outputNodes(self):
         print "\n --- Nodes --- "
-        for i, (x, y, z, _) in enumerate(self.nodes):
+        for i, (x, y, z) in enumerate(self.nodes):
             print "   %d: (%d, %d, %d)" % (i, x, y, z)
 
     def outputEdges(self):
