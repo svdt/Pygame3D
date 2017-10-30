@@ -8,13 +8,30 @@ def Cuboid((x,y,z), (w,h,d)):
     cuboid = wf.Wireframe()
     cuboid.addNodes(np.array([[nx,ny,nz] for nx in (x,x+w) for ny in (y,y+h) for nz in (z,z+d)]))
     cuboid.addFaces([(0,1,3,2), (7,5,4,6), (4,5,1,0), (2,3,7,6), (0,2,6,4), (5,7,3,1)])
-    
+
     return cuboid
-    
+
+def Toroid((x,y,z),r,R, resolution=10):
+    toroid = wf.Wireframe()
+
+    latitudes  = [n*2*np.pi/resolution for n in range(resolution)]
+    longitudes = [n*2*np.pi/resolution for n in range(resolution)]
+
+    # Add nodes except for poles
+    toroid.addNodes([(x + (R+r*np.cos(n))*np.cos(m), y + (R+r*np.cos(n))*np.sin(m), z + r*np.sin(n)) for m in latitudes for n in longitudes])
+
+    # Add square faces to whole spheroid
+    num_nodes = resolution*(resolution)
+    toroid.addFaces([(m+n, (m+resolution)%num_nodes+n, (m+resolution)%resolution**2+(n+1)%resolution) for n in range(resolution) for m in range(0,num_nodes,resolution)])
+    toroid.addFaces([(m+n, (m+resolution)%resolution**2+(n+1)%resolution,m+(n+1)%resolution) for n in range(resolution) for m in range(0,num_nodes,resolution)])
+
+    return toroid
+
+
 def Spheroid((x,y,z), (rx, ry, rz), resolution=10):
     """ Returns a wireframe spheroid centred on (x,y,z)
         with a radii of (rx,ry,rz) in the respective axes. """
-    
+
     spheroid   = wf.Wireframe()
     latitudes  = [n*np.pi/resolution for n in range(1,resolution)]
     longitudes = [n*2*np.pi/resolution for n in range(resolution)]
@@ -33,27 +50,27 @@ def Spheroid((x,y,z), (rx, ry, rz), resolution=10):
     spheroid.addFaces([(num_nodes, start_node+(n+1)%resolution, start_node+n) for n in range(resolution)])
 
     return spheroid
-    
+
 def HorizontalGrid((x,y,z), (dx,dz), (nx,nz)):
     """ Returns a nx by nz wireframe grid that starts at (x,y,z) with width dx.nx and depth dz.nz. """
-    
+
     grid = wf.Wireframe()
     grid.addNodes([[x+n1*dx, y, z+n2*dz] for n1 in range(nx+1) for n2 in range(nz+1)])
     grid.addEdges([(n1*(nz+1)+n2,n1*(nz+1)+n2+1) for n1 in range(nx+1) for n2 in range(nz)])
     grid.addEdges([(n1*(nz+1)+n2,(n1+1)*(nz+1)+n2) for n1 in range(nx) for n2 in range(nz+1)])
-    
+
     return grid
-    
+
 def FractalLandscape(origin=(0,0,0), dimensions=(400,400), iterations=4, height=40):
     import random
-    
+
     def midpoint(nodes):
         m = 1.0/ len(nodes)
-        x = m * sum(n[0] for n in nodes) 
-        y = m * sum(n[1] for n in nodes) 
-        z = m * sum(n[2] for n in nodes) 
+        x = m * sum(n[0] for n in nodes)
+        y = m * sum(n[1] for n in nodes)
+        z = m * sum(n[2] for n in nodes)
         return [x,y,z]
-    
+
     (x,y,z) = origin
     (dx,dz) = dimensions
     nodes = [[x, y, z], [x+dx, y, z], [x+dx, y, z+dz], [x, y, z+dz]]
@@ -69,26 +86,26 @@ def FractalLandscape(origin=(0,0,0), dimensions=(400,400), iterations=4, height=
         squares = [(x+y*size, x+y*size+1, x+(y+1)*size+1, x+(y+1)*size) for y in range(size-1) for x in range(size-1)]
         for (n1,n2,n3,n4) in squares:
             nodes.append(midpoint([nodes[n1], nodes[n2], nodes[n3], nodes[n4]]))
-        
+
         # Sort in order of grid
         nodes.sort(key=lambda node: (node[2],node[0]))
-        
+
         size = size*2-1
         # Horizontal edge
         edges = [(x+y*size, x+y*size+1) for y in range(size) for x in range(size-1)]
         # Vertical edges
         edges.extend([(x+y*size, x+(y+1)*size) for x in range(size) for y in range(size-1)])
-        
+
         # Shift node heights
         scale = height/2**(i*0.8)
         for node in nodes:
             node[1] += (random.random()-0.5)*scale
-    
+
     grid = wf.Wireframe(nodes)
     grid.addEdges(edges)
-    
+
     return grid
-    
+
 if __name__ == '__main__':
     grid = FractalLandscape(origin = (0,400,0), iterations=1)
     grid.output()
